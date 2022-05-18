@@ -492,7 +492,7 @@ What is expressed in code has defined semantics and can (in principle) be checke
 
 ##### Example
 
-    class Date {
+    class Date final {
     public:
         Month month() const;  // do
         int month();          // don't
@@ -925,7 +925,7 @@ The date is validated twice (by the `Date` constructor) and passed as a characte
 Excess checking can be costly.
 There are cases where checking early is inefficient because you might never need the value, or might only need part of the value that is more easily checked than the whole.  Similarly, don't add validity checks that change the asymptotic behavior of your interface (e.g., don't add a `O(n)` check to an interface with an average complexity of `O(1)`).
 
-    class Jet {    // Physics says: e * e < x * x + y * y + z * z
+    class Jet final {    // Physics says: e * e < x * x + y * y + z * z
         float x;
         float y;
         float z;
@@ -2227,7 +2227,7 @@ implementation (Pimpl) can isolate the users of a class from changes in its impl
 
 interface (widget.h)
 
-    class widget {
+    class widget final {
         class impl;
         std::unique_ptr<impl> pimpl;
     public:
@@ -2243,7 +2243,7 @@ interface (widget.h)
 
 implementation (widget.cpp)
 
-    class widget::impl {
+    class widget::impl final {
         int n; // private data
     public:
         void draw(const widget& w) { /* ... */ }
@@ -2305,7 +2305,7 @@ Such examples are discussed in [[Str15]](http://www.stroustrup.com/resource-mode
 
 So, we write a class
 
-    class Istream { [[gsl::suppress(lifetime)]]
+    class Istream final { [[gsl::suppress(lifetime)]]
     public:
         enum Opt { from_line = 1 };
         Istream() { }
@@ -4188,7 +4188,7 @@ If all data members can vary independently of each other, no invariant is possib
 
 but:
 
-    class Date {
+    class Date final {
     public:
         // validate that {yy, mm, dd} is a valid date and initialize
         Date(int yy, Month mm, char dd);
@@ -4224,7 +4224,7 @@ An explicit distinction between interface and implementation improves readabilit
 
 ##### Example
 
-    class Date {
+    class Date final {
     public:
         Date();
         // validate that {yy, mm, dd} is a valid date and initialize
@@ -4258,7 +4258,7 @@ Less coupling than with member functions, fewer functions that can cause trouble
 
 ##### Example
 
-    class Date {
+    class Date final {
         // ... relatively small interface ...
     };
 
@@ -4417,7 +4417,7 @@ This might be exactly what we want, but if we want to enforce a relation among m
 and enforce that relation (invariant) through constructors and member functions.
 For example:
 
-    class Distance {
+    class Distance final {
     public:
         // ...
         double meters() const { return magnitude*unit; }
@@ -4503,7 +4503,7 @@ You need a reason (use cases) for using a hierarchy.
 
 ##### Example
 
-    class Point1 {
+    class Point1 final {
         int x, y;
         // ... operations ...
         // ... no virtual functions ...
@@ -4839,8 +4839,8 @@ Users will be surprised if copy/move construction and copy/move assignment do lo
 
 ##### Example, bad
 
-    class Silly {   // BAD: Inconsistent copy operations
-        class Impl {
+    class Silly final {   // BAD: Inconsistent copy operations
+        class Impl final {
             // ...
         };
         shared_ptr<Impl> p;
@@ -4908,7 +4908,7 @@ There are two general categories of classes that need a user-defined destructor:
 
 ##### Example, bad
 
-    class Foo {   // bad; use the default destructor
+    class Foo final {   // bad; use the default destructor
     public:
         // ...
         ~Foo() { s = ""; i = 0; vi.clear(); }  // clean up
@@ -4940,7 +4940,7 @@ For resources represented as classes with a complete set of default operations, 
 
 ##### Example
 
-    class X {
+    class X final {
         ifstream f;   // might own a file
         // ... no default operations defined or =deleted ...
     };
@@ -4949,7 +4949,7 @@ For resources represented as classes with a complete set of default operations, 
 
 ##### Example, bad
 
-    class X2 {     // bad
+    class X2 final {     // bad
         FILE* f;   // might own a file
         // ... no default operations defined or =deleted ...
     };
@@ -5017,7 +5017,7 @@ A pointer member could represent a resource.
 Consider a `T*` a possible owner and therefore suspect.
 
     template<typename T>
-    class Smart_ptr {
+    class Smart_ptr final {
         T* p;   // BAD: vague about ownership of *p
         // ...
     public:
@@ -5033,7 +5033,7 @@ Consider a `T*` a possible owner and therefore suspect.
 Note that if you define a destructor, you must define or delete [all default operations](#Rc-five):
 
     template<typename T>
-    class Smart_ptr2 {
+    class Smart_ptr2 final {
         T* p;   // BAD: vague about ownership of *p
         // ...
     public:
@@ -5049,7 +5049,7 @@ Note that if you define a destructor, you must define or delete [all default ope
 The default copy operation will just copy the `p1.p` into `p2.p` leading to a double destruction of `p1.p`. Be explicit about ownership:
 
     template<typename T>
-    class Smart_ptr3 {
+    class Smart_ptr3 final {
         owner<T*> p;   // OK: explicit about ownership of *p
         // ...
     public:
@@ -5093,11 +5093,13 @@ See [this in the Discussion section](#Sd-dtor).
 
 ##### Example, bad
 
-    struct Base {  // BAD: implicitly has a public non-virtual destructor
+    class Base {  // BAD: implicitly has a public non-virtual destructor
+    public:
         virtual void f();
     };
 
-    struct D : Base {
+    class D : public Base {
+    public:
         string s {"a resource needing cleanup"};
         ~D() { /* ... do some cleanup ... */ }
         // ...
@@ -5118,7 +5120,7 @@ If the interface allows destroying, it should be safe to do so.
 
 A destructor must be non-private or it will prevent using the type:
 
-    class X {
+    class X final {
         ~X();   // private destructor
         // ...
     };
@@ -5148,7 +5150,7 @@ The standard library requires that all classes it deals with have destructors th
 
 ##### Example
 
-    class X {
+    class X final {
     public:
         ~X() noexcept;
         // ...
@@ -5236,7 +5238,7 @@ That's what constructors are for.
 
 ##### Example
 
-    class Date {  // a Date represents a valid date
+    class Date final {  // a Date represents a valid date
                   // in the January 1, 1900 to December 31, 2100 range
         Date(int dd, int mm, int yy)
             :d{dd}, m{mm}, y{yy}
@@ -5294,8 +5296,8 @@ A constructor establishes the invariant for a class. A user of a class should be
 
 ##### Example, bad
 
-    class X1 {
-        FILE* f;   // call init() before any other function
+    class X1 final {
+        FILE* f; // call init() before any other function
         // ...
     public:
         X1() {}
@@ -5337,7 +5339,7 @@ Leaving behind an invalid object is asking for trouble.
 
 ##### Example
 
-    class X2 {
+    class X2 final {
         FILE* f;
         // ...
     public:
@@ -5361,8 +5363,8 @@ Leaving behind an invalid object is asking for trouble.
 
 ##### Example, bad
 
-    class X3 {     // bad: the constructor leaves a non-valid object behind
-        FILE* f;   // call is_valid() before any other function
+    class X3 final { // bad: the constructor leaves a non-valid object behind
+        FILE* f;     // call is_valid() before any other function
         bool valid;
         // ...
     public:
@@ -5429,7 +5431,7 @@ A default constructor often simplifies the task of defining a suitable [moved-fr
 
 ##### Example
 
-    class Date { // BAD: no default constructor
+    class Date final { // BAD: no default constructor
     public:
         Date(int dd, int mm, int yyyy);
         // ...
@@ -5446,7 +5448,7 @@ There is no "natural" default date (the big bang is too far back in time to be u
 `{0, 0, 0}` is not a valid date in most calendar systems, so choosing that would be introducing something like floating-point's `NaN`.
 However, most realistic `Date` classes have a "first date" (e.g. January 1, 1970 is popular), so making that the default is usually trivial.
 
-    class Date {
+    class Date final {
     public:
         Date(int dd, int mm, int yyyy);
         Date() = default; // [See also](#Rc-default)
@@ -5548,7 +5550,7 @@ Being able to set a value to "the default" without operations that might fail si
 
     template<typename T>
     // elem points to space-elem element allocated using new
-    class Vector0 {
+    class Vector0 final {
     public:
         Vector0() :Vector0{0} {}
         Vector0(int n) :elem{new T[n]}, space{elem + n}, last{elem} {}
@@ -5567,7 +5569,7 @@ For example, `Vector0<int> v[100]` costs 100 allocations.
 
     template<typename T>
     // elem is nullptr or elem points to space-elem element allocated using new
-    class Vector1 {
+    class Vector1 final {
     public:
         // sets the representation to {nullptr, nullptr, nullptr}; doesn't throw
         Vector1() noexcept {}
@@ -5624,7 +5626,7 @@ To avoid unintended conversions.
 
 ##### Example, bad
 
-    class String {
+    class String final {
     public:
         String(int);   // BAD
         // ...
@@ -5636,7 +5638,7 @@ To avoid unintended conversions.
 
 If you really want an implicit conversion from the constructor argument type to the class type, don't use `explicit`:
 
-    class Complex {
+    class Complex final {
     public:
         Complex(double d);   // OK: we want a conversion from d to {d, 0}
         // ...
@@ -5798,7 +5800,7 @@ The return type of the factory should normally be `unique_ptr` by default; if so
 
     class B {
     protected:
-        class Token {};
+        class Token final {};
 
     public:
         explicit B(Token) { /* ... */ }  // create an imperfectly initialized object
@@ -5819,7 +5821,7 @@ The return type of the factory should normally be `unique_ptr` by default; if so
 
     class D : public B {                 // some derived class
     protected:
-        class Token {};
+        class Token final {};
 
     public:
         explicit D(Token) : B{ B::Token{} } {}
@@ -5849,7 +5851,7 @@ To avoid repetition and accidental differences.
 
 ##### Example, bad
 
-    class Date {   // BAD: repetitive
+    class Date final {   // BAD: repetitive
         int d;
         Month m;
         int y;
@@ -5868,7 +5870,7 @@ The common action gets tedious to write and might accidentally not be common.
 
 ##### Example
 
-    class Date2 {
+    class Date2 final {
         int d;
         Month m;
         int y;
@@ -5964,7 +5966,7 @@ The `swap` implementation technique offers the [strong guarantee](#Abrahams01).
 But what if you can get significantly better performance by not making a temporary copy? Consider a simple `Vector` intended for a domain where assignment of large, equal-sized `Vector`s is common. In this case, the copy of elements implied by the `swap` implementation technique could cause an order of magnitude increase in cost:
 
     template<typename T>
-    class Vector {
+    class Vector final {
     public:
         Vector& operator=(const Vector&);
         // ...
@@ -6007,7 +6009,7 @@ After a copy `x` and `y` can be independent objects (value semantics, the way no
 
 ##### Example
 
-    class X {   // OK: value semantics
+    class X final {   // OK: value semantics
     public:
         X();
         X(const X&);     // copy X
@@ -6038,7 +6040,7 @@ After a copy `x` and `y` can be independent objects (value semantics, the way no
 
 ##### Example
 
-    class X2 {  // OK: pointer semantics
+    class X2 final {  // OK: pointer semantics
     public:
         X2();
         X2(const X2&) = default; // shallow copy
@@ -6101,7 +6103,7 @@ The default assignment generated from members that handle self-assignment correc
 
 You can handle self-assignment by explicitly testing for self-assignment, but often it is faster and more elegant to cope without such a test (e.g., [using `swap`](#Rc-swap)).
 
-    class Foo {
+    class Foo final {
         string s;
         int i;
     public:
@@ -6161,7 +6163,7 @@ After `y = std::move(x)` the value of `y` should be the value `x` had and `x` sh
 ##### Example
 
     template<typename T>
-    class X {   // OK: value semantics
+    class X final {   // OK: value semantics
     public:
         X();
         X(X&& a) noexcept;  // move X
@@ -6214,7 +6216,7 @@ If `x = x` changes the value of `x`, people will be surprised and bad errors can
 
 ##### Example
 
-    class Foo {
+    class Foo final {
         string s;
         int i;
     public:
@@ -6265,7 +6267,7 @@ A non-throwing move will be used more efficiently by standard-library and langua
 ##### Example
 
     template<typename T>
-    class Vector {
+    class Vector final {
     public:
         Vector(Vector&& a) noexcept :elem{a.elem}, sz{a.sz} { a.sz = 0; a.elem = nullptr; }
         Vector& operator=(Vector&& a) noexcept { elem = a.elem; sz = a.sz; a.sz = 0; a.elem = nullptr; }
@@ -6280,7 +6282,7 @@ These operations do not throw.
 ##### Example, bad
 
     template<typename T>
-    class Vector2 {
+    class Vector2 final {
     public:
         Vector2(Vector2&& a) { *this = a; }             // just use the copy
         Vector2& operator=(Vector2&& a) { *this = a; }  // just use the copy
@@ -6378,7 +6380,7 @@ The compiler is more likely to get the default semantics right and you cannot im
 
 ##### Example
 
-    class Tracer {
+    class Tracer final {
         string message;
     public:
         Tracer(const string& m) : message{m} { cerr << "entering " << message << '\n'; }
@@ -6394,7 +6396,7 @@ Because we defined the destructor, we must define the copy and move operations. 
 
 ##### Example, bad
 
-    class Tracer2 {
+    class Tracer2 final {
         string message;
     public:
         Tracer2(const string& m) : message{m} { cerr << "entering " << message << '\n'; }
@@ -6525,7 +6527,7 @@ A `swap` can be handy for implementing a number of idioms, from smoothly moving 
 
 ##### Example, good
 
-    class Foo {
+    class Foo final {
     public:
         void swap(Foo& rhs) noexcept
         {
@@ -6601,7 +6603,8 @@ Asymmetric treatment of operands is surprising and a source of errors where conv
 
 ##### Example, bad
 
-    class B {
+    class B final {
+    public:
         string name;
         int number;
         bool operator==(const B& a) const {
@@ -6788,7 +6791,7 @@ In particular, `std::vector` and `std::map` provide useful relatively simple mod
     // simplified (e.g., no allocators):
 
     template<typename T>
-    class Sorted_vector {
+    class Sorted_vector final {
         using value_type = T;
         // ... iterator types ...
 
@@ -7521,7 +7524,7 @@ A trivial getter or setter adds no semantic value; the data item could just as w
 
 ##### Example
 
-    class Point {   // Bad: verbose
+    class Point final {   // Bad: verbose
         int x;
         int y;
     public:
@@ -7561,7 +7564,7 @@ A virtual function ensures code replication in a templated hierarchy.
 ##### Example, bad
 
     template<class T>
-    class Vector {
+    class Vector final {
     public:
         // ...
         virtual int size() const { return sz; }   // bad: what good could a derived class do?
@@ -7734,6 +7737,8 @@ or various bases from boost.intrusive (e.g. `list_base_hook` or `intrusive_ref_c
     class Utility {  // with data
         void utility1();
         virtual void utility2();    // customization point
+    protected:
+        ~Utility() = default;
     public:
         int x;
         int y;
@@ -7826,7 +7831,11 @@ Capping a hierarchy with `final` classes is rarely needed for logical reasons an
 
 ##### Example, bad
 
-    class Widget { /* ... */ };
+    class Widget {
+    public:
+        virtual ~Widget() = default;
+        /* ... */
+    };
 
     // nobody will ever want to improve My_widget (or so you thought)
     class My_widget final : public Widget { /* ... */ };
@@ -8322,7 +8331,7 @@ Minimize surprises.
 
 ##### Example
 
-    class X {
+    class X final {
     public:
         // ...
         X& operator=(const X&); // member function defining assignment
@@ -8521,7 +8530,7 @@ Many parts of the C++ semantics assume its default meaning.
 
 ##### Example
 
-    class Ptr { // a somewhat smart pointer
+    class Ptr final { // a somewhat smart pointer
         Ptr(X* pp) : p(pp) { /* check */ }
         X* operator->() { /* check */ return p; }
         X operator[](int i);
@@ -8714,7 +8723,7 @@ But heed the warning: [Avoid "naked" `union`s](#Ru-naked)
 
     constexpr size_t buffer_size = 16; // Slightly larger than the size of a pointer
 
-    class Immutable_string {
+    class Immutable_string final {
     public:
         Immutable_string(const char* str) :
             size(strlen(str))
@@ -8816,7 +8825,7 @@ The code is somewhat elaborate.
 Handling a type with user-defined assignment and destructor is tricky.
 Saving programmers from having to write such code is one reason for including `variant` in the standard.
 
-    class Value { // two alternative representations represented as a union
+    class Value final { // two alternative representations represented as a union
     private:
         enum class Tag { number, text };
         Tag type; // discriminant
@@ -9303,7 +9312,7 @@ Now all resource cleanup is automatic, performed once on all paths whether or no
 
 What is `Port`? A handy wrapper that encapsulates the resource:
 
-    class Port {
+    class Port final {
         PortHandle port;
     public:
         Port(string_view destination) : port{open_port(destination)} { }
@@ -12112,7 +12121,7 @@ Consider keeping previously computed results around for a costly operation:
 
     int compute(int x); // compute a value for x; assume this to be costly
 
-    class Cache {   // some type implementing a cache for an int->int operation
+    class Cache final {   // some type implementing a cache for an int->int operation
     public:
         pair<bool, int> find(int x) const;   // is there a value for x?
         void set(int x, int v);             // make y the value for x
@@ -12536,7 +12545,7 @@ We can define a type to represent the number of elements:
     struct Count { int n; };
 
     template<typename T>
-    class Vector {
+    class Vector final {
     public:
         Vector(Count n);                     // n default-initialized elements
         Vector(initializer_list<T> init);    // init.size() elements
@@ -15002,7 +15011,7 @@ Here, if some other `thread` consumes `thread1`'s notification, `thread2` can wa
 ##### Example
 
     template<typename T>
-    class Sync_queue {
+    class Sync_queue final {
     public:
         void put(const T& val);
         void put(T&& val);
@@ -15551,7 +15560,7 @@ Example with thread-safe static local variables of C++11.
         // ...
     }
 
-    class My_class
+    class My_class final
     {
     public:
         My_class()
@@ -15867,7 +15876,7 @@ Not all member functions can be called.
 
 ##### Example
 
-    class Vector {  // very simplified vector of doubles
+    class Vector final {  // very simplified vector of doubles
         // if elem != nullptr then elem points to sz doubles
     public:
         Vector() : elem{nullptr}, sz{0}{}
@@ -16203,7 +16212,7 @@ We don't know how to write reliable programs if a destructor, a swap, or a memor
 
 ##### Example, don't
 
-    class Connection {
+    class Connection final {
         // ...
     public:
         ~Connection()   // Don't: very bad destructor
@@ -16760,7 +16769,7 @@ This gives a more precise statement of design intent, better readability, more e
 
 ##### Example, bad
 
-    class Point {
+    class Point final {
         int x, y;
     public:
         int getx() { return x; }    // BAD, should be const as it doesn't modify the object's state
@@ -16804,7 +16813,7 @@ A `const` member function can modify the value of an object that is `mutable` or
 A common use is to maintain a cache rather than repeatedly do a complicated computation.
 For example, here is a `Date` that caches (memoizes) its string representation to simplify repeated uses:
 
-    class Date {
+    class Date final {
     public:
         // ...
         const string& string_ref() const
@@ -17107,7 +17116,7 @@ It also avoids brittle or inefficient workarounds. Convention: That's the way th
 
     template<typename T>
         // requires Regular<T>
-    class Vector {
+    class Vector final {
         // ...
         T* elem;   // points to sz Ts
         int sz;
@@ -17118,7 +17127,7 @@ It also avoids brittle or inefficient workarounds. Convention: That's the way th
 
 ##### Example, bad
 
-    class Container {
+    class Container final {
         // ...
         void* elem;   // points to size elements of some type
         int sz;
@@ -17177,7 +17186,7 @@ Examples include type erasure as with `std::shared_ptr`'s deleter (but [don't ov
 
     #include <memory>
 
-    class Object {
+    class Object final {
     public:
         template<typename T>
         Object(T&& obj)
@@ -17489,7 +17498,7 @@ Examples of complete sets are
 This rule applies whether we use direct language support for concepts or not.
 It is a general design rule that even applies to non-templates:
 
-    class Minimal {
+    class Minimal final {
         // ...
     };
 
@@ -17518,7 +17527,7 @@ The rule supports the view that a concept should reflect a (mathematically) cohe
 
 ##### Example
 
-    class Convenient {
+    class Convenient final {
         // ...
     };
 
@@ -17886,7 +17895,7 @@ They can also be used to wrap a trait.
 ##### Example
 
     template<typename T, size_t N>
-    class Matrix {
+    class Matrix final {
         // ...
         using Iterator = typename std::vector<T>::iterator;
         // ...
@@ -17997,7 +18006,7 @@ Most uses support that anyway.
 
 ##### Example
 
-    class X {
+    class X final {
     public:
         explicit X(int);
         X(const X&);            // copy
@@ -18185,7 +18194,7 @@ This limits use and typically increases code size.
 
     template<typename T, typename A = std::allocator<T>>
         // requires Regular<T> && Allocator<A>
-    class List {
+    class List final {
     public:
         struct Link {   // does not depend on A
             T elem;
@@ -18217,7 +18226,7 @@ Typically, the solution is to make what would have been a nested class non-local
 
     template<typename T, typename A = std::allocator<T>>
         // requires Regular<T> && Allocator<A>
-    class List2 {
+    class List2 final {
     public:
         using iterator = Link<T>*;
 
@@ -18477,10 +18486,11 @@ Templating a class hierarchy that has many functions, especially many virtual fu
 
     template<typename T>
     struct Container {         // an interface
-        virtual T* get(int i);
-        virtual T* first();
-        virtual T* next();
-        virtual void sort();
+        virtual T* get(int i) = 0;
+        virtual T* first() = 0;
+        virtual T* next() = 0;
+        virtual void sort() = 0;
+        virtual ~Container() = default;
     };
 
     template<typename T>
@@ -18613,10 +18623,12 @@ It could be a base class:
     struct Link_base {   // stable
         Link_base* suc;
         Link_base* pre;
+    protected:
+        ~Link_base() = default;
     };
 
     template<typename T>   // templated wrapper to add type safety
-    struct Link : Link_base {
+    struct Link final : Link_base {
         T val;
     };
 
@@ -18628,7 +18640,7 @@ It could be a base class:
     };
 
     template<typename T>
-    class List : List_base {
+    class List final : List_base {
     public:
         void put_front(const T& e) { add_front(new Link<T>{e}); }   // implicit cast to Link_base
         T& front() { static_cast<Link<T>*>(first).val; }   // explicit cast back to Link<T>
@@ -18979,16 +18991,19 @@ Use the least-derived class that has the functionality you need.
     public:
         Bar f();
         Bar g();
+        // ...
     };
 
     class Derived1 : public Base {
     public:
         Bar h();
+        // ...
     };
 
     class Derived2 : public Base {
     public:
         Bar j();
+        // ...
     };
 
     // bad, unless there is a specific reason for limiting to Derived1 objects only
@@ -20725,7 +20740,7 @@ and errors (when we didn't deal correctly with semi-constructed objects consiste
 
     // Old conventional style: many problems
 
-    class Picture
+    class Picture final
     {
         int mx;
         int my;
@@ -20779,7 +20794,7 @@ and errors (when we didn't deal correctly with semi-constructed objects consiste
 
 ##### Example, good
 
-    class Picture
+    class Picture final
     {
         int mx;
         int my;
@@ -21525,7 +21540,7 @@ Like C++, some styles distinguish types from non-types.
 For example, by capitalizing type names, but not the names of functions and variables.
 
     typename<typename T>
-    class HashTable {   // maps string to T
+    class HashTable final {   // maps string to T
         // ...
     };
 
@@ -22187,7 +22202,7 @@ Here is an example of the last option:
 
     class B {
     protected:
-        class Token {};
+        class Token final {};
 
     public:
         // constructor needs to be public so that make_shared can access it.
@@ -22212,7 +22227,7 @@ Here is an example of the last option:
 
     class D : public B {                 // some derived class
     protected:
-        class Token {};
+        class Token final {};
 
     public:
         // constructor needs to be public so that make_shared can access it.
@@ -22320,7 +22335,7 @@ Never allow an error to be reported from a destructor, a resource deallocation f
 
 ##### Example
 
-    class Nefarious {
+    class Nefarious final {
     public:
         Nefarious() { /* code that could throw */ }    // ok
         ~Nefarious() { /* code that could throw */ }   // BAD, should not throw
@@ -22341,7 +22356,7 @@ Never allow an error to be reported from a destructor, a resource deallocation f
 2. Classes with `Nefarious` members or bases are also hard to use safely, because their destructors must invoke `Nefarious`' destructor, and are similarly poisoned by its bad behavior:
 
 
-        class Innocent_bystander {
+        class Innocent_bystander final {
             Nefarious member;     // oops, poisons the enclosing class's destructor
             // ...
         };
@@ -22420,7 +22435,7 @@ If you define a move constructor, you must also define a move assignment operato
 
 ##### Example
 
-    class X {
+    class X final {
     public:
         X(const X&) { /* stuff */ }
 
@@ -22439,7 +22454,7 @@ If you define a move constructor, you must also define a move assignment operato
 
 If you define a destructor, you should not use the compiler-generated copy or move operation; you probably need to define or suppress copy and/or move.
 
-    class X {
+    class X final {
         HANDLE hnd;
         // ...
     public:
@@ -22453,7 +22468,7 @@ If you define a destructor, you should not use the compiler-generated copy or mo
 
 If you define copying, and any base or member has a type that defines a move operation, you should also define a move operation.
 
-    class X {
+    class X final {
         string s; // defines more efficient move operations
         // ... other data members ...
     public:
@@ -22513,7 +22528,7 @@ Prevent leaks. Leaks can lead to performance degradation, mysterious error, syst
 ##### Example
 
     template<class T>
-    class Vector {
+    class Vector final {
     private:
         T* elem;   // sz elements on the free store, owned by the class object
         int sz;
